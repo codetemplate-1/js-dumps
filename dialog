@@ -1,0 +1,120 @@
+import { useState } from "react";
+import { ModalProvider, useModal } from "react-aria";
+import "./DialogModal.css";
+
+const DialogModal = ({ title, children, onClose }) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  const close = () => {
+    setIsOpen(false);
+    onClose && onClose();
+  };
+
+  const { modalProps } = useModal();
+
+  return (
+    <>
+      <div className="dialog-modal-overlay" />
+      <div
+        {...modalProps}
+        className="dialog-modal"
+        aria-modal="true"
+        aria-labelledby="dialog-modal-title"
+      >
+        <h2 id="dialog-modal-title" className="dialog-modal-title">
+          {title}
+        </h2>
+        <div className="dialog-modal-content">{children}</div>
+        <div className="dialog-modal-footer">
+          <button onClick={close}>Close</button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const DialogModalWrapper = (props) => (
+  <ModalProvider>
+    <DialogModal {...props} />
+  </ModalProvider>
+);
+
+export default DialogModalWrapper;
+
+
+
+
+
+====
+
+.dialog-modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.dialog-modal {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.dialog-modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.dialog-modal-content {
+  margin: 1rem 0;
+}
+
+.dialog-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+
+=====
+
+
+import { useState } from "react";
+import DialogModal from "./DialogModal";
+
+const MyComponent = () => {
+  const [showDialog, setShowDialog] = useState(false);
+
+  const openDialog = () => {
+    setShowDialog(true);
+  };
+
+  const closeDialog = () => {
+    setShowDialog(false);
+  };
+
+  return (
+    <>
+      <button onClick={openDialog}>Open Dialog</button>
+      {showDialog && (
+        <DialogModal title="My Dialog" onClose={closeDialog}>
+          <p>This is the content of my dialog.</p>
+        </DialogModal>
+      )}
+    </>
+  );
+};
+
+export default MyComponent;
+
+
+
