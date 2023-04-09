@@ -1,0 +1,213 @@
+import { useState } from 'react';
+
+import { RfqContext, RfqContextType } from './rfqcontext';
+import { RFQ } from './types';
+
+interface RfqProviderProps {
+  initialRfq: RFQ;
+  children: React.ReactNode;
+}
+
+const RfqProvider = ({ initialRfq, children }: RfqProviderProps) => {
+  const [rfq, setRfq] = useState<RFQ>(initialRfq);
+
+  const contextValue: RfqContextType = {
+    rfq,
+    setRfq,
+  };
+
+  return <RfqContext.Provider value={contextValue}>{children}</RfqContext.Provider>;
+};
+
+export default RfqProvider;
+
+
+
+=====
+
+
+import { createContext } from 'react';
+
+import { RFQ } from './types';
+
+export interface RfqContextType {
+  rfq: RFQ;
+  setRfq: (rfq: RFQ) => void;
+}
+
+export const RfqContext = createContext<RfqContextType>({
+  rfq: { side: 'buy', quantity: 0, price: 0, ticker: '', symbol: '', isBlockTrade: false },
+  setRfq: () => {},
+});
+
+
+
+
+======
+
+
+
+
+import React, { useState, useContext } from 'react';
+import { RfqContext } from './RfqContext';
+import { useSelect, useCheckbox } from 'react-aria';
+
+type RFQ = {
+  side: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  ticker: string;
+  symbol: string;
+  isBlockTrade: boolean;
+};
+
+const RfqForm: React.FC = () => {
+  const [rfq, setRfq] = useState<RFQ>({
+    side: 'buy',
+    quantity: 0,
+    price: 0,
+    ticker: '',
+    symbol: '',
+    isBlockTrade: false,
+  });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const { dispatch } = useContext(RfqContext);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value, type, checked } = event.target;
+    const newValue = type === 'checkbox' ? checked : type === 'number' ? Number(value) : value;
+    setRfq({ ...rfq, [name]: newValue });
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length === 0) {
+      dispatch({ type: 'ADD_RFQ', payload: rfq });
+      setRfq({
+        side: 'buy',
+        quantity: 0,
+        price: 0,
+        ticker: '',
+        symbol: '',
+        isBlockTrade: false,
+      });
+    } else {
+      setErrors(formErrors);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+    if (!rfq.quantity) {
+      errors.quantity = 'Quantity is required';
+    }
+    if (!rfq.price) {
+      errors.price = 'Price is required';
+    }
+    if (!rfq.ticker) {
+      errors.ticker = 'Ticker is required';
+    }
+    if (!rfq.symbol) {
+      errors.symbol = 'Symbol is required';
+    }
+    return errors;
+  };
+
+  const sideSelect = useSelect({
+    label: 'Side',
+    selectedKey: rfq.side,
+    options: [
+      { key: 'buy', value: 'Buy' },
+      { key: 'sell', value: 'Sell' },
+    ],
+    onChange: (value) => setRfq({ ...rfq, side: value }),
+  });
+
+  const blockTradeCheckbox = useCheckbox({
+    label: 'Block Trade',
+    isChecked: rfq.isBlockTrade,
+    onChange: (isChecked) => setRfq({ ...rfq, isBlockTrade: isChecked }),
+  });
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor={sideSelect.id}>Side:</label>
+        <select {...sideSelect.selectProps} required>
+          {sideSelect.options.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.value}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor="quantity">Quantity:</label>
+        <input
+          type="number"
+          id="quantity"
+          name="quantity"
+          value={rfq.quantity}
+          onChange={handleChange}
+          required
+        />
+        {errors.quantity && <div>{errors.quantity}</div>}
+      </div>
+      <div>
+        <label
+      htmlFor="price"
+    >
+      Price:
+    </label>
+    <input
+      type="number"
+      id="price"
+      name="price"
+      value={rfq.price}
+      onChange={handleChange}
+      required
+    />
+    {errors.price && <div>{errors.price}</div>}
+  </div>
+  <div>
+    <label htmlFor="ticker">Ticker:</label>
+    <input
+      type="text"
+      id="ticker"
+      name="ticker"
+      value={rfq.ticker}
+      onChange={handleChange}
+      required
+      disabled={rfq.isBlockTrade}
+      aria-disabled={rfq.isBlockTrade}
+    />
+    {errors.ticker && <div>{errors.ticker}</div>}
+  </div>
+  <div>
+    <label htmlFor="symbol">Symbol:</label>
+    <input
+      type="text"
+      id="symbol"
+      name="symbol"
+      value={rfq.symbol}
+      onChange={handleChange}
+      required
+      disabled={rfq.isBlockTrade}
+      aria-disabled={rfq.isBlockTrade}
+    />
+    {errors.symbol && <div>{errors.symbol}</div>}
+  </div>
+  <div>
+    <label>
+      {blockTradeCheckbox.checkboxProps}
+      Block Trade
+    </label>
+  </div>
+  <div>
+    <button type="submit">Submit</button>
+    <button type="button" onClick={() => setRfq({ side: 'buy', quantity: 0, price: 0, ticker: '', symbol: '', isBlockTrade: false })}>Cancel</button>
+  </div>
+</form>
