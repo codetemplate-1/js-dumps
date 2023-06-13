@@ -53,3 +53,109 @@ describe("TimerCellRenderer", () => {
     ]);
   });
 });
+
+
+
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import RFQBlotter from "./RFQBlotter";
+
+describe("RFQBlotter", () => {
+  it("renders the component and triggers onGridReady event", async () => {
+    const gridRef = {
+      current: {
+        onFirstDataRendered: jest.fn(),
+        columnApi: {
+          getAllDisplayedColumns: jest.fn().mockReturnValue([
+            { getColId: () => "column1" },
+            { getColId: () => "column2" },
+          ]),
+          autoSizeColumns: jest.fn(),
+        },
+        api: {
+          refreshCells: jest.fn(),
+          getDisplayedRowAtIndex: jest.fn().mockReturnValue({}),
+          redrawRows: jest.fn(),
+        },
+      },
+    };
+
+    render(<RFQBlotter gridRef={gridRef} />);
+
+    expect(gridRef.current.onFirstDataRendered).toHaveBeenCalledTimes(1);
+
+    // Simulate onFirstDataRendered event
+    gridRef.current.onFirstDataRendered.mock.calls[0][0]();
+
+    expect(gridRef.current.columnApi.getAllDisplayedColumns).toHaveBeenCalledTimes(
+      1
+    );
+    expect(gridRef.current.columnApi.autoSizeColumns).toHaveBeenCalledTimes(1);
+    expect(gridRef.current.columnApi.autoSizeColumns).toHaveBeenCalledWith([
+      "column1",
+      "column2",
+    ]);
+
+    // Wait for setTimeout
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(gridRef.current.api.refreshCells).toHaveBeenCalledTimes(1);
+  });
+
+  it("triggers methodFromParent when called with update", async () => {
+    const gridRef = {
+      current: {
+        onFirstDataRendered: jest.fn(),
+        columnApi: {
+          getAllDisplayedColumns: jest.fn(),
+          autoSizeColumns: jest.fn(),
+        },
+        api: {
+          refreshCells: jest.fn(),
+          getDisplayedRowAtIndex: jest.fn().mockReturnValue({}),
+          redrawRows: jest.fn(),
+        },
+      },
+    };
+
+    render(<RFQBlotter gridRef={gridRef} />);
+
+    expect(gridRef.current.context.methodFromParent).toBeDefined();
+
+    // Simulate methodFromParent call with update
+    gridRef.current.context.methodFromParent({ update: true, index: 0 });
+
+    expect(gridRef.current.api.getDisplayedRowAtIndex).toHaveBeenCalledTimes(1);
+    expect(gridRef.current.api.redrawRows).toHaveBeenCalledTimes(1);
+    expect(gridRef.current.api.redrawRows).toHaveBeenCalledWith({
+      rowNodes: [{}],
+    });
+  });
+
+  it("renders the component with the correct class and data-testid", () => {
+    const gridRef = {
+      current: {
+        onFirstDataRendered: jest.fn(),
+        columnApi: {
+          getAllDisplayedColumns: jest.fn(),
+          autoSizeColumns: jest.fn(),
+        },
+        api: {
+          refreshCells: jest.fn(),
+          getDisplayedRowAtIndex: jest.fn().mockReturnValue({}),
+          redrawRows: jest.fn(),
+        },
+      },
+    };
+
+    render(<RFQBlotter gridRef={gridRef} />);
+
+    const gridContainer = screen.getByTestId("rfq-blotter");
+    expect(gridContainer).toHaveClass("grid-container");
+  });
+});
+
+
+
+
