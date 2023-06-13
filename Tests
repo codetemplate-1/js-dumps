@@ -1,0 +1,55 @@
+
+import React from "react";
+import { render, screen, act } from "@testing-library/react";
+import { TimerCellRenderer } from "./TimerCellRenderer";
+
+jest.useFakeTimers();
+
+describe("TimerCellRenderer", () => {
+  test("renders duration correctly", () => {
+    const publishTimestamp = new Date();
+    const status = "ACTIVE";
+    const value = { publishTimestamp, status };
+
+    render(<TimerCellRenderer value={value} />);
+
+    const durationElement = screen.getByText(/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/);
+    expect(durationElement).toBeInTheDocument();
+  });
+
+  test("stops timer when status is in timerStopStatus", () => {
+    const publishTimestamp = new Date();
+    const status = "RESPONSE";
+    const value = { publishTimestamp, status };
+
+    render(<TimerCellRenderer value={value} />);
+
+    act(() => {
+      jest.advanceTimersByTime(5000); // Simulate 5 seconds passed
+    });
+
+    const durationElement = screen.queryByText(/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/);
+    expect(durationElement).toBeNull();
+  });
+
+  test("invokes redrawRowsById when time limit is reached", () => {
+    const publishTimestamp = new Date();
+    publishTimestamp.setSeconds(publishTimestamp.getSeconds() - 20); // Set publishTimestamp 20 seconds ago
+    const status = "ACTIVE";
+    const value = { publishTimestamp, status };
+    const context = {
+      methodFromParent: jest.fn(),
+    };
+
+    render(<TimerCellRenderer value={value} context={context} />);
+
+    act(() => {
+      jest.advanceTimersByTime(30000); // Simulate 30 seconds passed
+    });
+
+    expect(context.methodFromParent).toHaveBeenCalledTimes(1);
+    expect(context.methodFromParent).toHaveBeenCalledWith([
+      { index: 0, update: true },
+    ]);
+  });
+});
